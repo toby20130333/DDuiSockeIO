@@ -2,7 +2,7 @@
 ###Getting Started
 
 #### Building the module
-
+* Base on Qt5.3 or later
 
 * Download or git clone the source code.
 
