@@ -9,12 +9,13 @@
 * 方便C++与JS进行交互
 * 实现服务端与客户端的socket.io完美结合
 * 弥补了Qt在PC端开发下无法直接使用socket.io的遗憾
+* 修复了源代码的编码问题(utf8)
 
 ## QtSocketIo
 
- ==============
+ =======================
 
- #### Building the socketio Module(编译socket.io模块)
+ ### Building the socketio Module(编译socket.io模块)
 
  * Base on Qt5.3 or later (至少需要Qt5.3 此时Qt版本支持Websocket)
 
