@@ -1,7 +1,7 @@
 
 > “Yeah It's on. ”
 
-## 基于socket.io 0.9.x的客户端的QtAPI的封装?
+## 基于socket.io 0.9.x的客户端的Qt API的封装
 
 ## 有哪些功能？
 
@@ -10,35 +10,39 @@
 * 实现服务端与客户端的socket.io完美结合
 * 弥补了Qt在PC端开发下无法直接使用socket.io的遗憾
 
-+QtSocketIo
- +==========
+## QtSocketIo
 
- -#### Building the socketio Module
+ ==============
 
- -* Base on Qt5.3 or later
- -
- -* Download or git clone the source code.
- -
- -* Put the source code in any directory you like
- -
- -* Go to top directory of the project in a terminal and run
- -
- -* You should notice the test dir
- -
- -* You must set the make evn path
- -
- -* follow github sourcecode and modified it for me
- -
- -* The other build way: Use qtcreator IDE and build it
- -*  cmd or terminal:
+ #### Building the socketio Module(编译socket.io模块)
 
- -```
- -    make clean(mingw32-make clean)
- -    qmake
- -    make(mingw32-make)
- -    make install(mingw32-make install)
- -```
- -* make install which can be installed to your QtSDK path
+ * Base on Qt5.3 or later (至少需要Qt5.3 此时Qt版本支持Websocket)
+
+ * Download or git clone the source code.(克隆或者下载该源代码)
+
+ * Put the source code in any directory you like(放置你喜爱的目录)
+
+ * Go to top directory of the project in a terminal and run(使用终端或者cmd命令 cd到项目目录)
+
+ * You should notice add the test/auto/cmake dir(自己新建一个test/auto/cmake目录 目前已经新建好啦)
+
+ * You must set the make evn path(设置环境QtSDK的变量)
+
+ * follow github sourcecode and modified it for me
+
+ * The other build way: Use qtcreator IDE and build it(可以使用qtcreator进行编译)
+
+ *  cmd or terminal:
+
+ ```
+
+     make clean(mingw32-make clean)
+     qmake
+     make(mingw32-make)
+     make install(mingw32-make install)
+
+ ```
+ * make install which can be installed to your QtSDK path(此时可以安装到QtSDK的安装目录的相应位置)
 
 ## 有问题反馈
 在使用中有任何问题，欢迎反馈给我，可以用以下联系方式跟我交流
@@ -61,4 +65,5 @@
     site : "http://www.heilqt.com",
     blog : "http://blog.heilqt.com"
   }
+
 ```
