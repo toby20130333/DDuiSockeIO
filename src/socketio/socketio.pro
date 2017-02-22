@@ -8,7 +8,9 @@ CONFIG += c++11
 TEMPLATE = lib
 
 DEFINES += QTSOCKETIO_LIBRARY QT_USE_STRINGBUILDER
-
+macx {
+QMAKE_MAC_SDK = macosx10.9
+}
 #QMAKE_DOCS = $$PWD/doc/qtsocketio.qdocconfig
 #OTHER_FILES += doc/src/*.qdoc   # show .qdoc files in Qt Creator
 #OTHER_FILES += doc/snippets/*.cpp

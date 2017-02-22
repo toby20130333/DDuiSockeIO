@@ -1,4 +1,4 @@
-﻿#ifndef QSOCKETIOCLIENT_H
+#ifndef QSOCKETIOCLIENT_H
 #define QSOCKETIOCLIENT_H
 
 #include <QtCore/QObject>
@@ -59,7 +59,6 @@ Q_SIGNALS:
     void connected(QString endpoint);
     void disconnected(QString endpoint);
     void heartbeatReceived();
-    void httpError(QString error);
 
 private Q_SLOTS:
     void onError(QAbstractSocket::SocketError error);

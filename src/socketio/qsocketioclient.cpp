@@ -1,4 +1,4 @@
-﻿#include "qsocketioclient.h"
+#include "qsocketioclient.h"
 #include <QtWebSockets/QWebSocket>
 #include <QtNetwork/QNetworkAccessManager>
 #include <QtNetwork/QNetworkReply>
@@ -56,6 +56,7 @@ bool QSocketIoClient::open(const QUrl &url)
     request.setRawHeader(QByteArrayLiteral("Accept"), QByteArrayLiteral("*/*"));
     request.setRawHeader(QByteArrayLiteral("Connection"), QByteArrayLiteral("close"));
     m_pNetworkAccessManager->post(request, QByteArray());
+    qDebug()<<" requestUrl:"<<requestUrl;
     return true;
 }
 
@@ -78,78 +79,78 @@ void QSocketIoClient::sendHeartBeat()
 void QSocketIoClient::replyFinished(QNetworkReply *reply)
 {
     int status = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
-    //QString statusReason = reply->attribute(QNetworkRequest::HttpReasonPhraseAttribute).toString();
-    //qDebug()<<" status "<<status<<" reply "<<reply->readAll();
+    qDebug()<<" replyFinished:"<<reply->errorString()<<" status "<<status;
+//    handshakeSucceeded();
+//    return;
+//    QString statusReason = reply->attribute(QNetworkRequest::HttpReasonPhraseAttribute).toString();
     switch (status)
     {
-    case 200:
-    {
-        //everything allright
-        QString payload = QString::fromUtf8(reply->readAll());
-        QStringList handshakeReturn = payload.split(":");
-        if (handshakeReturn.length() != 4)
+        case 200:
         {
-            qDebug() << "Not a valid handshake return";
-        }
-        else
-        {
-            QString sessionId = handshakeReturn[0];
-            m_heartBeatTimeout = handshakeReturn[1].toInt() * 1000 - 500;
-            m_connectionTimeout = handshakeReturn[2].toInt() * 1000;
-
-            m_pHeartBeatTimer->setInterval(m_heartBeatTimeout);
-
-            QStringList protocols = handshakeReturn[3].split(",");
-            if (!protocols.contains("websocket"))
+            //everything allright
+            QString payload = QString::fromUtf8(reply->readAll());
+            QStringList handshakeReturn = payload.split(":");
+            if (handshakeReturn.length() != 4)
             {
-                qDebug() << "websockets not supported; so cannot continue";
-                return;
+                qDebug() << "Not a valid handshake return";
             }
-            m_sessionId = sessionId;
-            handshakeSucceeded();
+            else
+            {
+                QString sessionId = handshakeReturn[0];
+                m_heartBeatTimeout = handshakeReturn[1].toInt() * 1000 - 500;
+                m_connectionTimeout = handshakeReturn[2].toInt() * 1000;
+
+                m_pHeartBeatTimer->setInterval(m_heartBeatTimeout);
+
+                QStringList protocols = handshakeReturn[3].split(",");
+                if (!protocols.contains("websocket"))
+                {
+                    qDebug() << "websockets not supported; so cannot continue";
+                    return;
+                }
+                m_sessionId = sessionId;
+                handshakeSucceeded();
+            }
+            break;
         }
-        break;
-    }
 
-    case 401:	//unauthorized
-    {
-        //the server refuses to authorize the client to connect,
-        //based on the supplied information (eg: Cookie header or custom query components).
-        qDebug() << "Error:" << reply->readAll();
-        break;
-    }
+        case 401:	//unauthorized
+        {
+            //the server refuses to authorize the client to connect,
+            //based on the supplied information (eg: Cookie header or custom query components).
+            qDebug() << "Error:" << reply->readAll();
+            break;
+        }
 
-    case 500:	//internal server error
-    {
-        qDebug() << "Error:" << reply->readAll();
-        break;
-    }
+        case 500:	//internal server error
+        {
+            qDebug() << "Error:" << reply->readAll();
+            break;
+        }
 
-    case 404:	//Not Found
-    {
-        qDebug() << "Error: " << reply->readAll();
-    }
+        case 404:	//Not Found
+        {
+            qDebug() << "Error: " << reply->readAll();
+        }
 
-    case 503:	//service unavailable
-    {
-        //the server refuses the connection for any reason (e.g. overload)
-        qDebug() << "Error:" << reply->readAll();
-        break;
-    }
-    case 400:
-    {
-        //you must open http server
-        Q_EMIT(httpError(reply->readAll()));
-    }break;
-    default:
-    {
-    }
+        case 503:	//service unavailable
+        {
+            //the server refuses the connection for any reason (e.g. overload)
+            qDebug() << "Error:" << reply->readAll();
+            break;
+        }
+        default:
+        {
+          qDebug() << "Errorstatus:" << status;
+        }
     }
 }
 
 void QSocketIoClient::handshakeSucceeded()
 {
     QUrl url(m_requestUrl.toString() + QStringLiteral("/socket.io/1/websocket/") % m_sessionId);
+//    m_pWebSocket->open(url, true);
+    qDebug()<<"handshakeSucceeded "<<url.toString();
     m_pWebSocket->open(url);
 }
 
@@ -173,7 +174,7 @@ void QSocketIoClient::eventReceived(QString message, QJsonArray arguments,
         /*if (callback->hasReturnValue()) {
             retVal = (*callback)(arguments);
         } else {*/
-        (*callback)(arguments);
+            (*callback)(arguments);
         //}
         if (mustAck) {
             acknowledge(messageId, retVal);
@@ -202,126 +203,126 @@ void QSocketIoClient::parseMessage(const QString &message)
 
         switch(messageType)
         {
-        case 0:	//disconnect
-        {
-            Q_EMIT(disconnected(endpoint));
-            break;
-        }
-        case 1: //connect
-        {
-            m_pHeartBeatTimer->start();
-            Q_EMIT(connected(endpoint));
-            break;
-        }
-        case 2:	//heartbeat
-        {
-            Q_EMIT(heartbeatReceived());
-            break;
-        }
-        case 3:	//message
-        {
-            Q_EMIT(messageReceived(data));
-            break;
-        }
-        case 4:	//json message
-        {
-            qDebug() << "JSON message received:" << data;
-            break;
-        }
-        case 5: //event
-        {
-            QJsonParseError parseError;
-            QJsonDocument document = QJsonDocument::fromJson(QByteArray(data.toLatin1()),
-                                                             &parseError);
-            if (parseError.error != QJsonParseError::NoError)
+            case 0:	//disconnect
             {
-                qDebug() << parseError.errorString();
+                Q_EMIT(disconnected(endpoint));
+                break;
             }
-            else
+            case 1: //connect
             {
-                if (document.isObject())
-                {
-                    QJsonObject object = document.object();
-                    QJsonValue value = object["name"];
-                    if (!value.isUndefined())
-                    {
-                        QString message = value.toString();
-                        QJsonArray arguments;
-                        QJsonValue argsValue = object["args"];
-                        if (!argsValue.isUndefined() && !argsValue.isNull())
-                        {
-                            if (argsValue.isArray())
-                            {
-                                arguments = argsValue.toArray();
-                            }
-                            else
-                            {
-                                qWarning() << "Args argument is not an array";
-                                return;
-                            }
-                        }
-                        eventReceived(message, arguments, mustAck && !autoAck, messageId);
-                    }
-                    else
-                    {
-                        qWarning() << "Invalid event received: no name";
-                    }
-                }
+                m_pHeartBeatTimer->start();
+                Q_EMIT(connected(endpoint));
+                break;
             }
-            break;
-        }
-        case 6:	//ack
-        {
-            QRegExp regExp("^([0-9]+)(\\+)?(.*)$", Qt::CaseInsensitive, QRegExp::RegExp2);
-            if (regExp.indexIn(data) != -1)
+            case 2:	//heartbeat
+            {
+                Q_EMIT(heartbeatReceived());
+                break;
+            }
+            case 3:	//message
+            {
+                Q_EMIT(messageReceived(data));
+                break;
+            }
+            case 4:	//json message
+            {
+                qDebug() << "JSON message received:" << data;
+                break;
+            }
+            case 5: //event
             {
                 QJsonParseError parseError;
-                QJsonArray arguments;
-                int messageId = regExp.cap(1).toInt();
-                QString argumentsValue = regExp.cap(3);
-                if (!argumentsValue.isEmpty())
+                QJsonDocument document = QJsonDocument::fromJson(QByteArray(data.toUtf8()),
+                                                                 &parseError);
+                if (parseError.error != QJsonParseError::NoError)
                 {
-                    QJsonDocument doc = QJsonDocument::fromJson(argumentsValue.toLatin1(),
-                                                                &parseError);
-                    if (parseError.error != QJsonParseError::NoError)
+                    qDebug() << parseError.errorString();
+                }
+                else
+                {
+                    if (document.isObject())
                     {
-                        qWarning() << "JSONParseError:" << parseError.errorString();
-                        return;
-                    }
-                    else
-                    {
-                        if (doc.isArray())
+                        QJsonObject object = document.object();
+                        QJsonValue value = object["name"];
+                        if (!value.isUndefined())
                         {
-                            arguments = doc.array();
+                            QString message = value.toString();
+                            QJsonArray arguments;
+                            QJsonValue argsValue = object["args"];
+                            if (!argsValue.isUndefined() && !argsValue.isNull())
+                            {
+                                if (argsValue.isArray())
+                                {
+                                    arguments = argsValue.toArray();
+                                }
+                                else
+                                {
+                                    qWarning() << "Args argument is not an array";
+                                    return;
+                                }
+                            }
+                            eventReceived(message, arguments, mustAck && !autoAck, messageId);
                         }
                         else
                         {
-                            qWarning() << "Error: data of event is not an array";
-                            return;
+                            qWarning() << "Invalid event received: no name";
                         }
                     }
                 }
-                ackReceived(messageId, arguments);
+                break;
             }
-            break;
-        }
-        case 7:	//error
-        {
-            QStringList pieces = data.split("+");
-            QString reason = pieces[0];
-            QString advice;
-            if (pieces.length() == 2)
+            case 6:	//ack
             {
-                advice = pieces[1];
+                QRegExp regExp("^([0-9]+)(\\+)?(.*)$", Qt::CaseInsensitive, QRegExp::RegExp2);
+                if (regExp.indexIn(data) != -1)
+                {
+                    QJsonParseError parseError;
+                    QJsonArray arguments;
+                    int messageId = regExp.cap(1).toInt();
+                    QString argumentsValue = regExp.cap(3);
+                    if (!argumentsValue.isEmpty())
+                    {
+                        QJsonDocument doc = QJsonDocument::fromJson(argumentsValue.toUtf8(),
+                                                                    &parseError);
+                        if (parseError.error != QJsonParseError::NoError)
+                        {
+                            qWarning() << "JSONParseError:" << parseError.errorString();
+                            return;
+                        }
+                        else
+                        {
+                            if (doc.isArray())
+                            {
+                                arguments = doc.array();
+                            }
+                            else
+                            {
+                                qWarning() << "Error: data of event is not an array";
+                                return;
+                            }
+                        }
+                    }
+                    ackReceived(messageId, arguments);
+                }
+                break;
             }
-            Q_EMIT(errorReceived(reason, advice));
-            break;
-        }
-        case 8:	//noop
-        {
-            qDebug() << "Noop received" << data;
-            break;
-        }
+            case 7:	//error
+            {
+                QStringList pieces = data.split("+");
+                QString reason = pieces[0];
+                QString advice;
+                if (pieces.length() == 2)
+                {
+                    advice = pieces[1];
+                }
+                Q_EMIT(errorReceived(reason, advice));
+                break;
+            }
+            case 8:	//noop
+            {
+                qDebug() << "Noop received" << data;
+                break;
+            }
         }
     }
 }
@@ -400,7 +401,7 @@ void QSocketIoClient::acknowledge(int messageId, const QJsonValue &retVal)
 }
 
 int QSocketIoClient::doEmitMessage(const QString &message, const QJsonDocument &document,
-                                   const QString &endpoint, bool callbackExpected)
+                                    const QString &endpoint, bool callbackExpected)
 {
     static int id = 0;
     const QString msg = QStringLiteral("5:%1%2:%3:{\"name\":\"%4\",\"args\":%5}")

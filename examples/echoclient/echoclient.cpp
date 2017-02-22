@@ -23,6 +23,7 @@ EchoClient::~EchoClient()
 
 void EchoClient::open(QUrl url)
 {
+    qDebug()<<"EchoClient::open "<<url;
     m_client.open(url);
 }
 
