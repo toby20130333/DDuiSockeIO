@@ -27,7 +27,7 @@
 
  * You should notice add the test/auto/cmake dir(自己新建一个test/auto/cmake目录 目前已经新建好啦)
 
- * You must set the make evn path(设置环境QtSDK的变量)
+ * You must set the make evn path(设置环境 QtSDK 的变量)
 
  * follow github sourcecode and modified it for me
 
@@ -48,9 +48,11 @@
 ## 模块如何使用
 
 ```
+
 #pro: QT += core gui  websockets  socketio
 
 #C++: 查看封装的API
+
 
 ```
 ## 使用效果
